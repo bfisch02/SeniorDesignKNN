@@ -120,6 +120,7 @@ def normalize(data, aps):
             MIN_DETECTED = ap.strength
 
 # Returns a list of Locations and an AccessPoint dictionary
+# Note: Right now, the data is hard-coded. It shouldn't be.
 def get_data():
     # Change this
     data = [(1,1,3,0,[(1,-66,1,1), (2, -60, 2, 2)]),
