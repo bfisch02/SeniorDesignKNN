@@ -5,6 +5,9 @@
 from collections import Counter
 import sets
 import math
+import json
+from pprint import pprint
+import sys
 
 # Minimum normalized RSSI value detected; used as "not detected" value
 MIN_DETECTED = 0
@@ -25,6 +28,9 @@ class Location(object):
         self.durrrr = loc[2]
         self.floor_id = loc[3]
         self.init_aps(loc[4])
+
+    def printLoc(self):
+        sys.stdout.write("Location: (x, y) = (" + str(self.x) + ", " + str(self.y) + ")\n")
 
     # Stores Access Points in a {mac_id : AccessPoint} dictionary
     def init_aps(self, aps):
@@ -76,7 +82,7 @@ def weighted_avg(tuples):
 
 # Uses k - Nearest Neighbor technique to get the coordinates associated with
 # the given AccessPoint dictionary
-def kNN(data, aps, k = 3):
+def kNN(data, aps, k = 7):
     k = min(k, len(data))
     data = sorted(data, key=lambda x: x.get_distance(aps))
     d = Counter([loc.floor_id for loc in data[:k]])
@@ -119,9 +125,27 @@ def normalize(data, aps):
         if ap.strength < MIN_DETECTED:
             MIN_DETECTED = ap.strength
 
+
+
+# Returns a list of Locations and an AccessPoint dictionary
+def get_locations(filename):
+    json_data = open(filename)
+    data = json.load(json_data)
+    locations = []
+    sys.stderr.write("LENGTH: " + str(len(data)) + "\n")
+    for d in data:
+        cur_macs = d["macs"]
+        cur_rss = d["rss"]
+        cur_aps = []
+        for i in range(len(cur_macs)):
+            cur_aps.append((cur_macs[i], cur_rss[i], 0, 0))
+        locations.append((d["x"], d["y"], d["direction"], d["floor_id"], cur_aps))
+    return [Location(i) for i in locations]
+
+
 # Returns a list of Locations and an AccessPoint dictionary
 # Note: Right now, the data is hard-coded. It shouldn't be.
-def get_data():
+def get_data2():
     # Change this
     data = [(1,1,3,0,[(1,-66,1,1), (2, -60, 2, 2)]),
             (2,2,3,0,[(1,-55,1,1), (3, -45, 2, 2), (4, -55, 2, 2)]),
@@ -143,7 +167,9 @@ def get_data():
 # Gets and normalizes training Location data and current AccessPoint strengths
 # Runs kNN algorithm to predict current location and floor
 def main():
-    (data, cur_aps) = get_data()
+    data = get_locations("access_points.json")
+    cur_loc = get_locations("access_points_test.json")
+    cur_aps = cur_loc[0].aps
     normalize(data, cur_aps)
     (x, y, floor) = kNN(data, cur_aps)
     print "x:", x
